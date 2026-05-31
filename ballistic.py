@@ -25,13 +25,18 @@ dt = 1/frameRate
 
 transitionY = L/2
 
-arrow(pos=vector(0,0,0), axis=vector(5,0,0), color=color.red, shaftwidth=0.1)
-arrow(pos=vector(0,0,0), axis=vector(0,5,0), color=color.green, shaftwidth=0.1)
-arrow(pos=vector(0,0,0), axis=vector(0,0,5), color=color.blue, shaftwidth=0.1)
+x=arrow(pos=vector(0,0,0), axis=vector(7,0,0), color=color.red, shaftwidth=0.1)
+label(pos=x.pos + x.axis, text='x', xoffset=20, height=16)
+
+y=arrow(pos=vector(0,0,0), axis=vector(0,0,7), color=color.blue, shaftwidth=0.1)
+label(pos=y.pos + y.axis, text='y', yoffset=20, height=16)
+
+z=arrow(pos=vector(0,0,0), axis=vector(0,7,0), color=color.green, shaftwidth=0.1)
+label(pos=z.pos + z.axis, text='z', zoffset=20, height=16)
 
 
-ball = sphere(pos=vector(L*cos(theta),transitionY-L*sin(theta),0), radius = 0.5, color = color.orange)
-rod = cylinder(pos=vec(0, transitionY, 0), axis=vec(cos(theta), -sin(theta), 0), color=color.orange, radius = 0.05, length = L)
+ball = sphere(pos=vector(L*cos(theta),transitionY-L*sin(theta)+L/2,0), radius = 0.5, color = color.orange)
+rod = cylinder(pos=vec(0, transitionY+L/2, 0), axis=vec(cos(theta), -sin(theta), 0), color=color.orange, radius = 0.05, length = L)
 
 gr = graph(align='right', title="<b> Energy of Pendulum vs Time<b>", ytitle="Energy [J]", xtitle="Time [s]", xmin=0,ymin=0)
 my_curve = gcurve(color=color.red, label="Kinetic Energy")
@@ -70,6 +75,7 @@ def my_action(b):
         mode = 1
     else:
         mode = 0
+    print(mode)
 
 def update_transitionY(b):
     if(mode ==0):
@@ -102,27 +108,34 @@ if(mode==0):
     slider_length = slider( bind=lenChange, min=0, max=10, value=L, length=250, step=.5)
 
 
-sleep(2)
+
 t=0
+sleep(2)
+
 while True:
-    ### sliders on display  
-    rate(frameRate)
-    if(bulletShot):
-        if(bulletFirstShot):
-            omega = getNewSpeed(vBall, mBall, vBullet, mBullet)
-            bulletFirstShot = False
-        alpha = g*cos(theta)/L
-        omega += alpha*dt
-        theta += omega*dt
-        ball.pos.x = L*cos(theta)
-        ball.pos.y = transitionY-L*sin(theta)
-        rod.pos.y = transitionY
-        rod.length = L
-        rod.rotate(angle=omega, axis=vector(cos(theta), -sin(theta), 0))
+    if(mode==0):
+        ### sliders on display  
+        rate(frameRate)
+        if(bulletShot):
+            if(bulletFirstShot):
+                omega = getNewSpeed(vBall, mBall, vBullet, mBullet) /L
+                bulletFirstShot = False
+            alpha = g*cos(theta)/L
+            omega += alpha*dt
+            theta += omega*dt
+            ball.pos.x = L*cos(theta)
+            ball.pos.y = transitionY-L*sin(theta)+L/2
+            rod.pos.y = transitionY+L/2
+            rod.length = L
+            rod.rotate(angle=omega, axis=vector(cos(theta), -sin(theta), 0))
+            
+            my_curve.plot(t, (mBall+mBullet)*(L*omega)*(L*omega)/2) # kinetic energy
+            my_curve2.plot(t, (mBullet+mBall)*g*(L-L*sin(theta))) # potential energy
+            t += dt
+    else:
+        ### draw new scene
         
-        my_curve.plot(t, (mBall+mBullet)*(L*omega)*(L*omega)/2) # kinetic energy
-        my_curve2.plot(t, (mBullet)*vBulletStart*vBulletStart/2-(mBall+mBullet)*(L*omega)*(L*omega)/2) # potential energy
-        t += dt
+
 
 def getNewSpeed(ballVelocity, ballMass, bulletVelocity, bulletMass):
     newMomentum = calculate2DMomentum(ballVelocity, ballMass, bulletVelocity, bulletMass)
@@ -131,7 +144,7 @@ def getNewSpeed(ballVelocity, ballMass, bulletVelocity, bulletMass):
 
 def calculate2DMomentum(ballVelocity, ballMass, bulletVelocity, bulletMass):
     momentumX = calculate1DMomentum(ballVelocity.x, ballMass, bulletVelocity.x, bulletMass)
-    momentumZ = calculate1DMomentum(ballVelocity.z, ballMass, bulletVelocity.x, bulletMass)
+    momentumZ = calculate1DMomentum(ballVelocity.z, ballMass, bulletVelocity.z, bulletMass)
     return (sqrt(momentumX ** 2 + momentumZ ** 2))
     
 def calculate1DMomentum(ballSpeed, ballMass, bulletSpeed, bulletMass):
