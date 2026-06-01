@@ -4,6 +4,8 @@ Web VPython 3.2
 L = 4
 g = 9.81
 
+scene.align = 'left'
+
 scene.userzoom = True
 scene.userspin = True
 scene.userpan = True
@@ -38,7 +40,7 @@ label(pos=z.pos + z.axis, text='z', zoffset=20, height=16)
 ball = sphere(pos=vector(L*cos(theta),transitionY-L*sin(theta)+L/2,0), radius = 0.5, color = color.orange)
 rod = cylinder(pos=vec(0, transitionY+L/2, 0), axis=vec(cos(theta), -sin(theta), 0), color=color.orange, radius = 0.05, length = L)
 
-gr = graph(align='right', title="<b> Energy of Pendulum vs Time<b>", ytitle="Energy [J]", xtitle="Time [s]", xmin=0,ymin=0)
+gr = graph(align='left', title="<b> Energy of Pendulum vs Time<b>", ytitle="Energy [J]", xtitle="Time [s]", xmin=0,ymin=0)
 my_curve = gcurve(color=color.red, label="Kinetic Energy")
 my_curve2 = gcurve(color=color.blue, label="Potential Energy")
 
@@ -62,19 +64,40 @@ def speedBulletChange(s):
 
 
 def lenChange(s):
+    global mode
+#    global length_label
+#    global length_text
+#    global slider_length
     if(mode==0):
         global L
         L = s.value
         length_text.text = f"{s.value:.1f} m"
         update_transitionY(s)
+    else:
+        length_label.text = "Angle of Bullet to x-z plane: "
+        L = s.value()
+        length_text.text = f"{s.value:.1f} degrees"
+        ## fix transition?
 
 
 def my_action(b):
+    theta = pi/2
+    omega = 0
     global mode
     if(b.text == "2D"):
         mode = 1
+        length_label.text = "Angle of Bullet to x-z plane: "
+        length_text.text = f"{L:.3f} degrees"
+        L = 90
+        slider_length.visible = True
+        slider_length = slider( bind=lenChange, min=45, max=135, value=L, length=250, step=5)
     else:
         mode = 0
+        length_label.text = "Pendulum Length: "
+        length_text.text = f"{L:.3f} m"
+        L = 4
+        slider_length.visible = True
+        slider_length = slider( bind=lenChange, min=0, max=10, value=L, length=250, step=.5)
     print(mode)
 
 def update_transitionY(b):
@@ -101,12 +124,12 @@ scene.append_to_caption("\n\nBullet Speed: ")
 speed_text = wtext(text=f"{vBullet.x:.3f} m/s")
 slider_bullet_speed = slider( bind=speedBulletChange, min=50, max=1000, value=vBullet.x, length=250, step=50)
 
-### LENGTH FOR PENDULUM
-if(mode==0):
-    scene.append_to_caption("\n\nPendulum Length: ")
-    length_text = wtext(text=f"{L:.3f} m")
-    slider_length = slider( bind=lenChange, min=0, max=10, value=L, length=250, step=.5)
-
+### LENGTH FOR PENDULUM but its also a variable for the angle that the bullet is initially shot 
+# at because im too tired to delete and make a new slider
+scene.append_to_caption("\n\n")
+length_label = wtext(text="Pendulum Length: ")
+length_text = wtext(text=f"{L:.3f} m")
+slider_length = slider( bind=lenChange, min=0, max=10, value=L, length=250, step=.5)
 
 
 t=0
@@ -133,6 +156,7 @@ while True:
             my_curve2.plot(t, (mBullet+mBall)*g*(L-L*sin(theta))) # potential energy
             t += dt
     else:
+        sleep(5)
         ### draw new scene
         
 
@@ -149,3 +173,5 @@ def calculate2DMomentum(ballVelocity, ballMass, bulletVelocity, bulletMass):
     
 def calculate1DMomentum(ballSpeed, ballMass, bulletSpeed, bulletMass):
     return(ballSpeed*ballMass + bulletSpeed*bulletMass)
+    
+#def adjustBullet2D(theta,r):
