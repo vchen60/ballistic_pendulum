@@ -71,11 +71,20 @@ def massBulletChange(s):
     global mBullet
     mBullet = s.value
     mass_text.text = f"{mBullet:.3f} kg"
+    
 
 def speedBulletChange(s):
     global vBullet
+    global vBulletStart = s.value
+    global bulletAngle
     vBullet = vector(s.value,0,0)
     speed_text.text = f"{s.value:.1f} m/s"
+    
+    if mode == 0:
+        vBullet = vector(vBulletStart, 0, 0)
+    else:
+        angleRad = bulletAngle* (pi/180)
+        vBullet = vector(vBulletStart*cos(angleRad),0,vBulletStart * sin(angleRad))
 
 def lenChange(s):
     global mode
@@ -83,6 +92,8 @@ def lenChange(s):
     global transitionY
     global slider_length
     global bulletAngle
+    global vBullet
+    a = mag(vBullet)
     if mode == 0:
         L = s.value
         length_text.text = f"{s.value:.1f} m"
@@ -92,8 +103,8 @@ def lenChange(s):
         rod.axis = ball.pos - vec(0, transitionY + L/2, 0)
     else:
         bulletAngle = s.value
-        angleRad = bulletAngle * pi / 180
-        vBall = vector(vBulletStart * cos(angleRad), 0, vBulletStart * sin(angleRad))
+        angleRad = bulletAngle*(pi/180)
+        vBullet = vector(a*cos(angleRad), 0, a*sin(angleRad))
         length_text.text = f"{s.value:.1f} degrees"
 
 
@@ -105,7 +116,7 @@ def my_action(b):
     global bulletAngle
     global slider_length
     global pBall
-    global vBall
+    global vBall, vBullet
     global mBall
     global transitionY
     global printlag
@@ -123,7 +134,7 @@ def my_action(b):
         pBall = pivot + vector(1,-sqrt(L**2-1),0)
         angleRad = bulletAngle * pi / 180
         vBullet = vector(vBulletStart * cos(angleRad), 0, vBulletStart * sin(angleRad))
-        vBall = vector(0, 0, 10)
+        # vBall = vector(0, 0, 10)
     else:
         mode = 0
         length_label.text = "Pendulum Length: "
@@ -139,31 +150,46 @@ def my_action(b):
     main_loop(b)
 
 def reset():
+    global bulletFirstShot = True
+    global bulletShot = True
+    
     global ball
     global rod
     global running = False
     global a = vec(0, -g, 0)
     global t = 0
     
-    global L = 2
-    global bulletAngle = 90
+#    global L = 2
+#    global bulletAngle = 90
     global g = 9.81
     
     global mBall = 1
-    global vBall = vector(0, 0, 0)
+    global transitionY = 1
+    global pivot
+    global pBall
+    global vBall
+    
     
     global mBullet = 0.002
-    global vBullet = vector(1000, 0, 0)
     global vBulletStart = 1000
     global bulletAngle = 90
+    
+    global vBall = vector(0, 0, 0)
+    
+    if mode == 0:
+        vBullet = vector(vBulletStart, 0, 0)
+        global L = 2
+        global bulletAngle = 90
+    else:
+        pivot = vector(0, transitionY + L/2, 0)
+        pBall = pivot + vector(1,-sqrt(L**2-1),0)
+        angleRad = bulletAngle* (pi/180)
+        vBullet = vector(vBulletStart*cos(angleRad),0,vBulletStart * sin(angleRad))
     
     global theta = pi/2
     global omega = 0
     
-    global transitionY = 1
-    global pivot = vector(0, transitionY, 0)
-    global pBall = pivot + vector(1,-sqrt(2**2-1),0)
-    
+
     global my_curve
     global my_curve2
     my_curve.data = []
@@ -228,12 +254,14 @@ def main_loop(b):
         slider_mass_bullet.disabled = True
         running = True
     else:
-        slider_length.disabled = False
-        slider_bullet_speed.disabled = False
         slider_mass_ball.disabled = False
         slider_mass_bullet.disabled = False
         running = False
-        if(b.text=='RESET'):
+        if(mode == 0):
+            slider_length.disabled = False
+        if(b.text!='STOP'):
+            slider_bullet_speed.disabled = False
+            slider_length.disabled = False
             reset()
             t=0
             
