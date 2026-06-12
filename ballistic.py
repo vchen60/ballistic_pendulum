@@ -3,13 +3,16 @@ from vpython import *
 
 ## DO NOT CHANGE
 
+scene = canvas(resizable = False)
+scene.userzoom = False
+
 scene.align = 'left'
 scene.width = 400
 scene.height = 280
 scene.center=vec(0,2.5,0)
 running = False
 
-frameRate = 10000
+frameRate = 5000
 dt = 1/frameRate
 t=0
 
@@ -80,9 +83,7 @@ def speedBulletChange(s):
     vBullet = vector(s.value,0,0)
     speed_text.text = f"{s.value:.1f} m/s"
     
-    if mode == 0:
-        vBullet = vector(vBulletStart, 0, 0)
-    else:
+    if mode == 1:
         angleRad = bulletAngle* (pi/180)
         vBullet = vector(vBulletStart*cos(angleRad),0,vBulletStart * sin(angleRad))
 
@@ -134,70 +135,83 @@ def my_action(b):
         pBall = pivot + vector(1,-sqrt(L**2-1),0)
         angleRad = bulletAngle * pi / 180
         vBullet = vector(vBulletStart * cos(angleRad), 0, vBulletStart * sin(angleRad))
-        # vBall = vector(0, 0, 10)
+        vBall = vector(0, 0, 10)
     else:
         mode = 0
         length_label.text = "Pendulum Length: "
         L = 2
         slider_length.delete()
-        slider_length = slider( bind=lenChange, min=0.5, max=10, value=L, length=250, step=.5)
+        slider_length = slider( bind=lenChange, min=0.1, max=5, value=L, length=250, step=.1)
         length_text.text = f"{L:.1f} m"
         
     printlag.delete()
-    printlag = wtext(text="\n\n\n\n\n\n")
+    printlag = wtext(text="\n\nTo use this program, simply put in inputs for the bullet mass, bullet speed, ball mass, and, for 1\ndegree of freedom, the length of the pendulum, or for 2 degrees, the angle of the bullet to the \ninitial motion of the pendulum. This program makes use of the assumption of a perfectly \nmassless, rigid rod. Then, watch as your pendulum launches!\n\n")
     
     reset()
     main_loop(b)
 
 def reset():
-    global bulletFirstShot = True
-    global bulletShot = True
+    global bulletFirstShot
+    bulletFirstShot = True
+    global bulletShot
+    bulletShot = True
     
-    global ball
-    global rod
-    global running = False
-    global a = vec(0, -g, 0)
-    global t = 0
+    global running
+    running = False
+    global a
+    a = vec(0, -g, 0)
+    global t
+    t = 0
     
-#    global L = 2
+    global L
+    L = 2
 #    global bulletAngle = 90
-    global g = 9.81
-    
-    global mBall = 1
-    global transitionY = 1
-    global pivot
-    global pBall
+
+    global mBall
+    mBall = 1
+    global transitionY
+    transitionY = 1
+
+    global mBullet
+    mBullet = 0.002
     global vBall
-    
-    
-    global mBullet = 0.002
-    global vBulletStart = 1000
-    global bulletAngle = 90
-    
-    global vBall = vector(0, 0, 0)
+    vBall = vector(0, 0, 0)
     
     if mode == 0:
+        global vBulletStart
+        vBulletStart = 1000
+        global bulletAngle
+        bulletAngle = 90
+        global vBullet
         vBullet = vector(vBulletStart, 0, 0)
-        global L = 2
-        global bulletAngle = 90
     else:
+        global vBall
+        vBall = vector(-10, 0, 0)
+        global pivot
         pivot = vector(0, transitionY + L/2, 0)
+        global pBall
         pBall = pivot + vector(1,-sqrt(L**2-1),0)
         angleRad = bulletAngle* (pi/180)
+        global vBullet
         vBullet = vector(vBulletStart*cos(angleRad),0,vBulletStart * sin(angleRad))
+    global theta
+    global omega
+    theta = pi/2
+    omega = 0
     
-    global theta = pi/2
-    global omega = 0
-    
-
+    '''
     global my_curve
     global my_curve2
+    '''
     my_curve.data = []
     my_curve2.data = []
-    
-    ball.pos = vector(L*cos(theta), -L*sin(theta) + L, 0)
+    ball.pos.x = L*cos(theta)
+    ball.pos.y = -L*sin(theta) + L
+    ball.pos.z = 0
     ball.radius = 0.25 * (mBall**(1/3))
-    rod.pos = vec(0, transitionY + L/2, 0)
+    rod.pos.x = 0
+    rod.pos.y = L
+    rod.pos.z = 0
     rod.length = L
     rod.axis = ball.pos - vec(0, transitionY + L/2, 0)
 
@@ -211,7 +225,7 @@ button(bind=my_action, text="1D", pos=scene.caption_anchor)
 button(bind=my_action, text="2D", pos=scene.caption_anchor)
 
 
-scene.append_to_caption("\n\n")
+scene.append_to_caption("\n")
 button(bind=main_loop, text="START", pos=scene.caption_anchor)
 button(bind=main_loop, text="STOP", pos=scene.caption_anchor)
 button(bind=main_loop, text="RESET", pos=scene.caption_anchor)
@@ -245,7 +259,7 @@ def main_loop(b):
     global t
     if(b.text=='START'):
         printlag.delete()
-        printlag = wtext(text="\n\n\n\n\n\n")
+        printlag = wtext(text="\n\nTo use this program, simply put in inputs for the bullet mass, bullet speed, ball mass, and, for 1\ndegree of freedom, the length of the pendulum, or for 2 degrees, the angle of the bullet to the \ninitial motion of the pendulum. This program makes use of the assumption of a perfectly \nmassless, rigid rod. Then, watch as your pendulum launches!\n\n")
         gr.delete()
         gr = graph(align='left', title="<b> Energy of Pendulum vs Time<b>", ytitle="Energy [J]", xtitle="Time [s]", xmin=0,ymin=0, width=400, height=280)
         slider_length.disabled = True
@@ -254,21 +268,17 @@ def main_loop(b):
         slider_mass_bullet.disabled = True
         running = True
     else:
-        slider_mass_ball.disabled = False
-        slider_mass_bullet.disabled = False
         running = False
-        if(mode == 0):
-            slider_length.disabled = False
         if(b.text!='STOP'):
             slider_bullet_speed.disabled = False
             slider_length.disabled = False
+            slider_mass_ball.disabled = False
+            slider_mass_bullet.disabled = False
             reset()
             t=0
-            
 
+printlag = wtext(text="\n\nTo use this program, simply put in inputs for the bullet mass, bullet speed, ball mass, and, for 1\ndegree of freedom, the length of the pendulum, or for 2 degrees, the angle of the bullet to the \ninitial motion of the pendulum. This program makes use of the assumption of a perfectly \nmassless, rigid rod. Then, watch as your pendulum launches!\n\n")
 
-
-printlag = wtext(text="\n\n\n\n\n\n")      
 while True:
     rate(frameRate)
     if(running):
