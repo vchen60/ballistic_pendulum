@@ -4,7 +4,7 @@ from vpython import *
 ## DO NOT CHANGE
 
 scene = canvas(resizable = False)
-scene.userzoom = False
+# scene.userzoom = False
 
 scene.align = 'left'
 scene.width = 400
@@ -12,7 +12,7 @@ scene.height = 280
 scene.center=vec(0,2.5,0)
 running = False
 
-frameRate = 5000
+frameRate = 10000
 dt = 1/frameRate
 t=0
 
@@ -21,7 +21,7 @@ bulletFirstShot = True
 
 ################### basic parameters
 L = 2
-bulletAngle = 90
+bulletAngle = 0
 g = 9.81
 
 a = vec(0, -g, 0)
@@ -60,7 +60,10 @@ label(pos=z.pos + z.axis, text='z', zoffset=20, height=16)
 
 ball = sphere(pos=vector(L*cos(theta),-L*sin(theta)+L,0), radius = 0.25, color = color.orange)
 rod = cylinder(pos=vec(0, transitionY+L/2, 0), axis=ball.pos-vec(0, transitionY+L/2, 0), color=color.orange, radius = 0.03, length = L)
+barrel = cylinder(pos=vec(L*5*cos(bulletAngle*pi/180), 0, L*5*sin(bulletAngle*pi/180)), axis=ball.pos-vec(L*5*cos(bulletAngle*pi/180), 0, L*5*sin(bulletAngle*pi/180)), color=color.white, radius = 0.05, length = L)
+cartridge = box(pos=vec(L*5*cos(bulletAngle*pi/180), 0-L/18, L*5*sin(bulletAngle*pi/180)), axis=ball.pos-vec(L*5*cos(bulletAngle*pi/180), 0, L*5*sin(bulletAngle*pi/180)), color=color.white, width = 0.1, height = L/10, length = L/4)
 
+# bullet = sphere(pos=vec(L*4, 0, 0),color=color.white, radius = 0.05)
 ### ALL THE BINDS
 
 def massBallChange(s):
@@ -127,7 +130,7 @@ def my_action(b):
         mode = 1
         length_label.text = "Angle of Bullet to x-z plane: "
         slider_length.delete()
-        bulletAngle = 90
+        bulletAngle = 0
         slider_length = slider( bind=lenChange, min=0, max=180, value=bulletAngle, length=250, step=5)
         length_text.text = f"{bulletAngle:.1f} degrees"
         pivot = vector(0, transitionY, 0)
@@ -165,7 +168,6 @@ def reset():
     
     global L
     L = 2
-#    global bulletAngle = 90
 
     global mBall
     mBall = 1
@@ -181,7 +183,7 @@ def reset():
         global vBulletStart
         vBulletStart = 1000
         global bulletAngle
-        bulletAngle = 90
+        bulletAngle = 0
         global vBullet
         vBullet = vector(vBulletStart, 0, 0)
     else:
@@ -281,6 +283,13 @@ printlag = wtext(text="\n\nTo use this program, simply put in inputs for the bul
 
 while True:
     rate(frameRate)
+    
+    barrel.pos=vec(L*5*cos(bulletAngle*pi/180), 0, L*5*sin(bulletAngle*pi/180))
+    barrel.axis=ball.pos-vec(L*5*cos(bulletAngle*pi/180), 0, L*5*sin(bulletAngle*pi/180))
+    barrel.length = L
+    cartridge.pos=vec(L*5*cos(bulletAngle*pi/180), 0-L/18, L*5*sin(bulletAngle*pi/180))
+    cartridge.axis=ball.pos-vec(L*5*cos(bulletAngle*pi/180), 0, L*5*sin(bulletAngle*pi/180))
+    cartridge.length = L/4
     if(running):
         if(mode==0):
             rate(frameRate)
@@ -301,53 +310,51 @@ while True:
                 my_curve2.plot(t, (mBullet+mBall)*g*(L-L*sin(theta))) # potential energy
                 t += dt
         else:
-            rate(frameRate)
+            rate(frameRate)      
+            if(bulletFirstShot):
+                vBall = (mBall*vBall + mBullet*vBullet)/(mBall+mBullet)
+                bulletFirstShot = False
 
-            if(bulletShot):
-                if(bulletFirstShot):
-                    vBall = (mBall*vBall + mBullet*vBullet)/(mBall+mBullet)
-                    bulletFirstShot = False
+            a = vector(0,-g,0)
 
-                a = vector(0,-g,0)
+            r = pBall - pivot
+            rHat = norm(r)
 
-                r = pBall - pivot
-                rHat = norm(r)
+            aRadial = dot(a,rHat)*rHat
+            aTangent = a - aRadial
 
-                aRadial = dot(a,rHat)*rHat
-                aTangent = a - aRadial
+            vBall += aTangent*dt
 
-                vBall += aTangent*dt
+            vRadial = dot(vBall,rHat)*rHat
+            vBall -= vRadial
 
-                vRadial = dot(vBall,rHat)*rHat
-                vBall -= vRadial
+            pBall += vBall*dt
 
-                pBall += vBall*dt
+            r = pBall - pivot
+            rHat = norm(r)
+            pBall = pivot + L*rHat
 
-                r = pBall - pivot
-                rHat = norm(r)
-                pBall = pivot + L*rHat
+            ball.pos = pBall
+            rod.pos = pivot
+            rod.axis = pBall - pivot
+            KE = 0.5*(mBall+mBullet)*(mag(vBall))**2
+            PE = (mBall+mBullet)*g*(pBall.y - (pivot.y - L)) ## find correction factor since PE != 0
+            my_curve.plot(t, KE)
+            my_curve2.plot(t, PE)
+            t += dt
 
-                ball.pos = pBall
-                rod.pos = pivot
-                rod.axis = pBall - pivot
-
-                KE = 0.5*(mBall+mBullet)*mag(vBall)**2
-                PE = (mBall+mBullet)*g*(pBall.y - (pivot.y - L)) ## find correction factor since PE != 0
-
-                my_curve.plot(t, KE)
-                my_curve2.plot(t, PE)
-
-                t += dt
+        
 
 def getNewSpeed(ballVelocity, ballMass, bulletVelocity, bulletMass):
-    newMomentum = calculate2DMomentum(ballVelocity, ballMass, bulletVelocity, bulletMass)
+    newMomentum = calculate3DMomentum(ballVelocity, ballMass, bulletVelocity, bulletMass)
     totalMass = ballMass + bulletMass
     return (newMomentum/totalMass)
 
-def calculate2DMomentum(ballVelocity, ballMass, bulletVelocity, bulletMass):
+def calculate3DMomentum(ballVelocity, ballMass, bulletVelocity, bulletMass):
     momentumX = calculate1DMomentum(ballVelocity.x, ballMass, bulletVelocity.x, bulletMass)
+    momentumY = calculate1DMomentum(ballVelocity.y, ballMass, bulletVelocity.y, bulletMass)
     momentumZ = calculate1DMomentum(ballVelocity.z, ballMass, bulletVelocity.z, bulletMass)
-    return (sqrt(momentumX ** 2 + momentumZ ** 2))
+    return (sqrt(momentumX ** 2 + momentumY ** 2 + momentumZ ** 2))
     
 def calculate1DMomentum(ballSpeed, ballMass, bulletSpeed, bulletMass):
     return(ballSpeed*ballMass + bulletSpeed*bulletMass)
