@@ -1,12 +1,13 @@
 # ballistic_pendulum
 Jason Zhang + Vincent Chen, AP Physics C Final Project
 
-
-Web VPython 3.2
+### Software Required: Web VPython 3.2
 ## README
 
 Vincent Chen & Jason Zhang
+
 3D Ballistic Pendulum
+
 AP Physics C, Period 8
 
 This program seeks to simulate a ballistic pendulum with one degree (polar angle) and two degrees (a polar and 
